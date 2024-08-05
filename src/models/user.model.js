@@ -3,83 +3,86 @@ import jwt from 'jsonwebtoken';
 import bcrypt from "bcrypt"
 
 const userSchema = new Schema({
-    fullname: {
-        type: String,
-        require: true,
-        lowecase: true,
-        trim: true,
-        index: true
+    username:{
+            type:String,
+            require:true,
+            unique:true,
+            lowercase:true,
+            trim:true,
+            index:true
     },
-    username: {
-        type: String,
-        require: true,
-        lowecase: true,
-        unique: true,
-        trim: true,
-        index: true
+    email:{
+            type:String,
+            require:true,
+            unique:true,
+            lowercase:true,
+            trim:true,
+            index:true
+        },
+    fullname:{
+            type:String,
+            require:true,
+            lowercase:true,
+            trim:true,
+            index:true
+        },
+    password:{
+        type:String,
+        require:[true , 'Password is required']
     },
-    email: {
-        type: String,
-        require: true,
-        unique: true,
-        lowecase: true,
-        trim: true,
-        index: true
+    phonenumber:{
+            type:Number,
+            require:true,
+            lowercase:true,
+            trim:true,
+            index:true
     },
-    phoneNumber: {
-        type: Number,
-        require: true,
-        trim: true,
-        index: true
-    },
-    password: {
-        type: String,
-        require: [true, 'Password is required']
-    }
-}, { timestamps: true })
+    refreshToken : {
+        type : String
+    }    
 
-// This Method is used to encrypt data  ||| using pre method 
-userSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) return next();
+},{timestamps: true});
 
-    this.password = await bcrypt.hash(this.password, 10);
+// This pre method is used to encrypt data 
+userSchema.pre("save" , async function (next) {
+    if(!this.isModified("password")) return next();
+
+    this.password = await bcrypt.hash(this.password,10)
     next()
 })
 
-// this is method is used to check user password is equl to crpted password
+// this method is is used check user password is equl to crpted password 
+userSchema.methods.isPasswordCorrect = async function 
+(password){
+   return await bcrypt.compare(password , this.password)  
+} 
 
-userSchema.methods.comparePassword = async function (password) {
-    return await bcrypt.compare(password, this.password);
-}
-
-// this method is used to create Access token
-
-userSchema.method.generateAccessToken = function () {
-    return jwt.sign(
+// THIS METHOD IS USED TO CREATE ACCESS TOKEN 
+userSchema.methods.generateAccessToken = function(){
+   return  jwt.sign(
         {
-            _id: this._id,
-            email: this.email,
-            usernaem: this.username,
-            fullname: this.fullname
+            _id : this._id ,
+            email : this.email,
+            username :this.username,
+            fullname:this.fullname, 
+            phonenumber:this.phonenumber
         },
         process.env.ACCESS_TOKEN_SECRET,
         {
-            expiresIn: process.env.ACCESS_TOKEN_SECRET
+            expiresIn:process.env.ACCESS_TOKEN_EXPIRY
         }
     )
 }
-
-userSchema.method.generateAccessToken = function () {
-    return jwt.sign(
+// THIS METHOD IS USED TO CREATE REFRESH TOKEN 
+userSchema.methods.generateRefreshToken = function(){
+    return  jwt.sign(
         {
-            _id: this._id,
-        }
-        ,
+            _id : this._id ,
+        },
         process.env.REFRESH_TOKEN_SECRET,
         {
-            expiresIn: process.env.REFRESH_TOKEN_SECRET
+            expiresIn:process.env.REFRESH_TOKEN_EXPIRY
         }
     )
 }
-
-export const User = mongoose.model("User", userSchema);
+export const User =mongoose.model("User",userSchema)
